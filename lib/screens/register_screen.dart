@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../services/db_service.dart';
+import 'profile_details_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -40,11 +42,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       return;
     }
-    // For MVP we just show a snackbar and pop back to login
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Tạo tài khoản thành công (demo)')),
+    // basic email format check
+    final emailLower = email.toLowerCase();
+    if (!RegExp(r"^[^@\s]+@[^@\s]+\.[^@\s]+$").hasMatch(emailLower)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Email không đúng định dạng')),
+      );
+      return;
+    }
+
+    // check duplicate email (case-insensitive)
+    final usersBox = DBService.users();
+    final exists = usersBox.values.any(
+      (u) => (u.email).toLowerCase() == emailLower,
     );
-    Navigator.of(context).pop();
+    if (exists) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Email đã tồn tại, vui lòng dùng email khác'),
+        ),
+      );
+      return;
+    }
+
+    // open profile details form to collect extended info
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ProfileDetailsScreen(
+          email: email,
+          password: pass,
+          remember: _remember,
+        ),
+      ),
+    );
   }
 
   Widget _socialButton(String assetName) {

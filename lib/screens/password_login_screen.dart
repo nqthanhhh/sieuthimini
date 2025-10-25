@@ -18,6 +18,19 @@ class _PasswordLoginScreenState extends State<PasswordLoginScreen> {
   bool _obscurePass = true;
 
   @override
+  void initState() {
+    super.initState();
+    final settings = DBService.settings();
+    final savedEmail = settings.get('remember_email');
+    final savedPass = settings.get('remember_pass');
+    if (savedEmail != null && savedPass != null) {
+      _emailCtrl.text = savedEmail as String;
+      _passCtrl.text = savedPass as String;
+      _remember = true;
+    }
+  }
+
+  @override
   void dispose() {
     _emailCtrl.dispose();
     _passCtrl.dispose();
@@ -40,6 +53,22 @@ class _PasswordLoginScreenState extends State<PasswordLoginScreen> {
     );
     if (matches.isNotEmpty) {
       final user = matches.first;
+      // persist credentials when remember is checked
+      final settings = DBService.settings();
+      if (_remember) {
+        settings.put('remember_email', email);
+        settings.put('remember_pass', pass);
+      } else {
+        if (settings.containsKey('remember_email')) {
+          settings.delete('remember_email');
+        }
+        if (settings.containsKey('remember_pass')) {
+          settings.delete('remember_pass');
+        }
+      }
+      // set current user email so other screens can load per-user data (e.g., cart)
+      final settings2 = DBService.settings();
+      settings2.put('current_user_email', user.email);
       widget.onLogin(user.role);
       Navigator.of(context).pop();
     } else {
